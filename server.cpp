@@ -1,8 +1,8 @@
 #include "graph.h"
-#include<arpa/inet.h>
-#include<stdlib.h>
-#include<sys/types.h>
-#include<unistd.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <string> 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -12,9 +12,10 @@ using namespace std;
 int main(int argc, char **argv) {
     // Graph graph(argv[1]);
     Graph graph("db_toy.csv");
+    // adding cache
     
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd == -1) {
+       if (fd == -1) {
         perror("socket");
         return 1;
     }
@@ -63,6 +64,8 @@ int main(int argc, char **argv) {
             for (int num : input_numbers){
                 std::cerr << num << endl; 
             }
+            //TODO: adding code check in cache if pair in cache return else run bfs
+
             // Find BFS path
             vector<int> bfs_path = graph.BFS(input_numbers[0], input_numbers[1]);
             std::cerr << "got BFS : " << endl;
@@ -83,6 +86,7 @@ int main(int argc, char **argv) {
                 ssize_t bytes_written = write(fd2, step_as_str.c_str(), step_as_str.size());
             }
             close(fd2); // Close the client socket in the child process
+            //add to cache
             return 0;
         }
         std::cerr << "finish with client" << endl; 
