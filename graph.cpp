@@ -1,5 +1,9 @@
 #include "graph.h"
 #include <unistd.h>
+#include <limits.h>
+#include <string>
+#include <algorithm>
+
 
 Graph::Graph(string file_name){
     std::cout << "use graph constructor"; 
