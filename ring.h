@@ -15,6 +15,7 @@ class ring {
     }
 
     T& operator [](int index){
+        std::cerr << "index = " << index << endl;
         if(index < 0 || index >= N)
             throw index_out_of_bounds_exception();
         return elements[index];
@@ -39,8 +40,9 @@ template<class T, int N >
 ostream& operator<<(ostream& os , ring <T,N>& x ){
     // std::cout << "reading from the list" << endl;
     os << "[";
-    for(int i = 0; i< N; i++)
-        os<< x[i] << ", ";
+    for(int i = 0; i< N; i++){
+            os<< x[i] << ", ";
+    }
     os << "]";
     return os;
 };

@@ -1,5 +1,6 @@
 #include "ring.h"
 #include "graph.h"
+#include <thread>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -8,9 +9,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <mutex>
-#include <thread>
+
 using namespace std;
-#define RING_SIZE 10
+#define RING_SIZE 2
 
 
 bool startsWith(const std::string& str, const std::string& prefix) {
@@ -29,7 +30,7 @@ bool endsWith(const std::string& str, const std::string& suffix) {
 
 
 int contains(ring<std::string, RING_SIZE>& history, int v, int u) {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < RING_SIZE; i++) {
         if (startsWith(history[i], std::to_string(v) + " ") && endsWith(history[i], " " +std::to_string(u) + "\n")) {
             return i; // Added semicolon
         }
@@ -37,11 +38,14 @@ int contains(ring<std::string, RING_SIZE>& history, int v, int u) {
     return -1;
 }
 
-void handleRequest(int fd2, Graph& graph, ring<string, RING_SIZE>* myRing, std::mutex ringMutex) {
+
+
+void handleRequest(int fd2, Graph& graph, ring<string, RING_SIZE>* myRing) {
                 // ringMutex.lock();
-            cout << "Child PID: " << getpid() << std::endl;
+            // cout << "Child PID: " << getpid() << std::endl;
             // close(fd2); // Close the listening socket in the child process
-            
+            std::cout << "start handleRequest" << endl;
+            // std::this_thread::sleep_for(std::chrono::milliseconds(1000*5));
             vector <int> input_numbers;
             char buffer[1024];
             ssize_t bytes_read = read(fd2, buffer, sizeof(buffer));
@@ -64,7 +68,6 @@ void handleRequest(int fd2, Graph& graph, ring<string, RING_SIZE>* myRing, std::
             // Find BFS path
             std::cout << "search in cache" << "\n";
             std::cout << "myRing=" << *myRing << endl;
-            ringMutex.lock();
             int containsIndex = contains(*myRing, input_numbers[0], input_numbers[1]);
             if(containsIndex >= 0){
                 std::cerr << "reading from the cache index " << containsIndex << "\n";
@@ -103,7 +106,6 @@ void handleRequest(int fd2, Graph& graph, ring<string, RING_SIZE>* myRing, std::
                 }
                 
             }
-            ringMutex.unlock();
             close(fd2); // Close the client socket in the child process
 
 }
@@ -145,9 +147,15 @@ int main(int argc, char **argv) {
             continue;
         }
         std::cout << "got client, try to read: " << endl;
-        std::thread handleRequest(fd2, graph, myRing, ringMutex);
+        // std::thread handleRequest(fd2, graph, myRing);
+        std::thread handleRequestThread([fd2, &graph, myRing, &ringMutex]() { 
+            ringMutex.lock();
+            std::cout << "start new thread" << endl;
+            handleRequest(fd2, graph, myRing); });
+            ringMutex.unlock();
+        handleRequestThread.detach(); // Wait for the worker thread to finish    
+        
         std::cerr << "finish with client" << endl; 
-        close(fd2); // Close the client socket in the parent process
     }
 
     std::cerr << "server is done" << endl; 
